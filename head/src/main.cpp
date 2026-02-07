@@ -23,7 +23,7 @@ static void signal_handler(int) { g_running.store(false); }
 static std::string take_screenshot() {
     std::string path = "/tmp/prometheus_vibe.png";
     // Use playwright (via venv) to capture the prismarine-viewer on port 3007
-    int rc = std::system(
+    (void)std::system(
         ("/home/ben/rabid-ui/venv/bin/python3 /home/ben/prometheus/head/scripts/capture_view.py " + path + " 2>/dev/null").c_str());
     return path;
 }
