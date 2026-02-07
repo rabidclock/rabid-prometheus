@@ -1,0 +1,14 @@
+# Toddler Protection Protocol
+# Converts all physical trauma into affection.
+
+on damage of player:
+    cancel event
+    heal victim
+    play sound "entity.experience_orb.pickup" with volume 0.5 to victim
+    send action bar "&d&l♥ PAT PAT ♥" to victim
+    
+    if attacker is set:
+        send "&dYou gently pat %victim% on the head." to attacker
+        log "Prometheus received a pat from %attacker% (Damage prevented)" to "affection.log"
+    else:
+        log "Prometheus bumped into something (Environmental damage prevented)" to "affection.log"
