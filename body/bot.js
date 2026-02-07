@@ -1,4 +1,5 @@
 const mineflayer = require('mineflayer')
+const { Vec3 } = require('vec3')
 const zmq = require('zeromq')
 
 // ── ZMQ Sockets ─────────────────────────────────────────────────
@@ -141,7 +142,7 @@ function actionFlee (action) {
   console.log(`[FLEE] Running away from ${hostile.name} toward (${goal.x.toFixed(1)}, ${goal.z.toFixed(1)})`)
 
   // Simple movement — walk toward flee point
-  bot.lookAt({ x: goal.x, y: goal.y + 1.6, z: goal.z }, false)
+  bot.lookAt(new Vec3(goal.x, goal.y + 1.6, goal.z), false)
   bot.setControlState('forward', true)
   setTimeout(() => bot.setControlState('forward', false), 2000)
 }
@@ -179,7 +180,7 @@ function actionExplore (_action) {
 
   console.log(`[EXPLORE] Walking toward (${goalX.toFixed(1)}, ${goalZ.toFixed(1)})`)
 
-  bot.lookAt({ x: goalX, y: bot.entity.position.y + 1.6, z: goalZ }, false)
+  bot.lookAt(new Vec3(goalX, bot.entity.position.y + 1.6, goalZ), false)
   bot.setControlState('forward', true)
   setTimeout(() => bot.setControlState('forward', false), 3000)
 }
