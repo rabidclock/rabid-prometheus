@@ -247,24 +247,29 @@ std::string Soul::observe(const std::string& screenshot_path) {
     }
 
     nlohmann::json payload = {
-        {"prompt",      "<|im_start|>system\nYou are a Minecraft vision assistant. "
-                        "Describe what you see concisely: entities, terrain, threats, "
-                        "items, and anything notable.<|im_end|>\n"
-                        "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>"
-                        "What do you see in this screenshot?<|im_end|>\n"
-                        "<|im_start|>assistant\n"},
-        {"n_predict",   256},
+        {"messages", {
+            {{"role", "system"},
+             {"content", "You are a Minecraft vision assistant. "
+                         "Describe what you see concisely: entities, terrain, threats, "
+                         "items, and anything notable."}},
+            {{"role", "user"},
+             {"content", {
+                 {{"type", "image_url"},
+                  {"image_url", {{"url", "data:image/png;base64," + b64}}}},
+                 {{"type", "text"},
+                  {"text", "What do you see in this screenshot?"}}
+             }}}
+        }},
+        {"max_tokens",  256},
         {"temperature", 0.3},
-        {"stop",        {"<|im_end|>"}},
-        {"image_data",  {{{"data", b64}, {"id", 0}}}},
     };
 
     try {
-        std::string resp = http_post(impl_->server_url + "/completion",
-                                     payload.dump(), 60);
+        std::string resp = http_post(impl_->server_url + "/v1/chat/completions",
+                                     payload.dump(), 300);
         auto json = nlohmann::json::parse(resp, nullptr, false);
-        if (!json.is_discarded() && json.contains("content")) {
-            std::string desc = json["content"];
+        if (!json.is_discarded() && json.contains("choices")) {
+            std::string desc = json["choices"][0]["message"]["content"];
             memory_.tag("[MEM:VIBE_CHECK]");
             std::cout << "[SOUL] Observation: " << desc << "\n";
             return desc;
