@@ -11,7 +11,9 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "canvas": "^3.2.1",
     "mineflayer": "^4.34.0",
+    "prismarine-viewer": "^1.33.0",
     "zeromq": "^6.4.2"
   }
 }

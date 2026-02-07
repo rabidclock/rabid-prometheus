@@ -7,13 +7,26 @@
 #include "teacher/teacher.h"
 
 #include <atomic>
+#include <chrono>
+#include <cstdlib>
 #include <csignal>
 #include <iostream>
+#include <string>
 #include <thread>
 
 static std::atomic<bool> g_running{true};
 
 static void signal_handler(int) { g_running.store(false); }
+
+// Take a screenshot of the bot's prismarine-viewer via playwright.
+// Falls back to a fixed path if the screenshot command fails.
+static std::string take_screenshot() {
+    std::string path = "/tmp/prometheus_vibe.png";
+    // Use playwright (via venv) to capture the prismarine-viewer on port 3007
+    int rc = std::system(
+        ("/home/ben/rabid-ui/venv/bin/python3 /home/ben/prometheus/head/scripts/capture_view.py " + path + " 2>/dev/null").c_str());
+    return path;
+}
 
 int main(int argc, char* argv[]) {
     (void)argc;
@@ -37,6 +50,15 @@ int main(int argc, char* argv[]) {
     memory.init();
     body.connect();
     lizard.load_model();
+
+    // Spawn llama-server and wait for it to be ready
+    soul.spawn_server(
+        "/home/ben/prometheus/models/Qwen2.5-VL-32B-Instruct-Q8_0.gguf",
+        "/home/ben/prometheus/models/mmproj-Qwen2.5-VL-32B-Instruct-Q8_0.gguf",
+        99,    // gpu layers
+        4096,  // context size
+        8080   // port
+    );
     soul.connect();
 
     std::cout << "[HEAD] All subsystems initialised.\n";
@@ -75,6 +97,28 @@ int main(int argc, char* argv[]) {
         circadian.run(g_running);
     });
 
+    // Vibe Check: take a screenshot every 10 seconds and observe via Soul
+    std::thread vibe_thread([&] {
+        // Wait a bit for everything to settle
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        while (g_running.load()) {
+            std::string screenshot = take_screenshot();
+            std::string description = soul.observe(screenshot);
+            std::cout << "[VIBE CHECK] " << description << "\n";
+
+            // Also escalate to the soul for deeper reasoning
+            arbiter.escalate("Vibe check — describe the current situation and suggest "
+                             "what we should do next.",
+                             soul.observe(screenshot));
+
+            // Sleep 10 seconds (in 100ms increments so we can exit promptly)
+            for (int i = 0; i < 100 && g_running.load(); ++i) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            }
+        }
+    });
+
     // ── Main loop: arbiter dispatches winning actions ───────────
     while (g_running.load()) {
         arbiter.dispatch_tick();
@@ -88,6 +132,7 @@ int main(int argc, char* argv[]) {
     lizard_thread.join();
     soul_thread.join();
     circadian_thread.join();
+    vibe_thread.join();
 
     body.disconnect();
     std::cout << "[HEAD] Goodbye.\n";

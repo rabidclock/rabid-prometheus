@@ -1,6 +1,7 @@
 const mineflayer = require('mineflayer')
 const { Vec3 } = require('vec3')
 const zmq = require('zeromq')
+const { mineflayer: mineflayerViewer } = require('prismarine-viewer')
 
 // ── ZMQ Sockets ─────────────────────────────────────────────────
 const pubSock = new zmq.Publisher()   // PUB: percepts → Head (port 5555)
@@ -20,6 +21,11 @@ const bot = mineflayer.createBot({
 bot.on('spawn', () => {
   console.log('Prometheus has opened its eyes (Spawned).')
   bot.chat('I am awake.')
+
+  // Start prismarine-viewer on port 3007 (first-person view)
+  mineflayerViewer(bot, { port: 3007, firstPerson: true })
+  console.log('[VIEWER] prismarine-viewer running on http://localhost:3007')
+
   startPerceptPublisher()
 })
 
