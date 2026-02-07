@@ -33,8 +33,18 @@ public:
     Soul(const Soul&) = delete;
     Soul& operator=(const Soul&) = delete;
 
-    // Verify the llama-server is reachable.
+    // Spawn the llama-server process (if not already running).
+    void spawn_server(const std::string& model_path,
+                      const std::string& mmproj_path,
+                      int gpu_layers = 99,
+                      int ctx_size   = 4096,
+                      int port       = 8080);
+
+    // Verify the llama-server is reachable (retries for up to ~30s).
     void connect();
+
+    // Analyse a screenshot and return a textual scene description.
+    std::string observe(const std::string& screenshot_path);
 
     // Synchronous deliberation (called from the soul thread).
     SoulPlan deliberate(const SoulQuery& query);
