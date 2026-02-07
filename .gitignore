@@ -1,0 +1,29 @@
+# Build artifacts
+head/build/
+
+# Node
+body/node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Minecraft server runtime
+server/logs/
+server/world/
+server/world_nether/
+server/world_the_end/
+server/cache/
+server/libraries/
+server/versions/
+server/plugins/Skript/backups/
+server/plugins/Skript/variables.csv
+server/usercache.json
+server/session.lock
