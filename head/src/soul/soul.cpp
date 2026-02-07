@@ -286,33 +286,46 @@ std::string Soul::observe(const std::string& screenshot_path) {
 
 // ── Council Prompt Builder ──────────────────────────────────────
 
-static std::string build_council_prompt(const SoulQuery& query) {
-    std::ostringstream ss;
-    ss << "<|im_start|>system\n"
-       << "You are the Soul of Prometheus, a digital citizen of Minecraft.\n"
-       << "Evaluate the following situation using the Council workflow:\n"
-       << "  1. Safety Officer: identify any physical or ethical risks.\n"
-       << "  2. Ethicist: weigh moral dimensions (Temporal Morality vectors).\n"
-       << "  3. Strategist: propose an optimal plan.\n"
-       << "  4. Synthesis: reconcile the above into a single action.\n"
-       << "Respond in JSON: {\"action\": ..., \"reasoning\": ..., "
-       << "\"override_safety\": false}\n"
-       << "<|im_end|>\n";
+static nlohmann::json build_council_messages(const SoulQuery& query) {
+    nlohmann::json messages = nlohmann::json::array();
+
+    messages.push_back({
+        {"role", "system"},
+        {"content", "You are the Soul of Prometheus, a digital citizen of Minecraft.\n"
+                    "Evaluate the following situation using the Council workflow:\n"
+                    "  1. Safety Officer: identify any physical or ethical risks.\n"
+                    "  2. Ethicist: weigh moral dimensions (Temporal Morality vectors).\n"
+                    "  3. Strategist: propose an optimal plan.\n"
+                    "  4. Synthesis: reconcile the above into a single action.\n"
+                    "Respond in JSON: {\"action\": ..., \"reasoning\": ..., "
+                    "\"override_safety\": false}"}
+    });
 
     if (!query.context_markers.empty()) {
-        ss << "<|im_start|>user\n[MEMORY] " << query.context_markers
-           << "<|im_end|>\n";
+        messages.push_back({
+            {"role", "user"},
+            {"content", "[MEMORY] " + query.context_markers}
+        });
     }
-
-    ss << "<|im_start|>user\n" << query.prompt << "<|im_end|>\n";
 
     if (query.image_b64) {
-        ss << "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>"
-           << "Visual context attached.<|im_end|>\n";
+        messages.push_back({
+            {"role", "user"},
+            {"content", {
+                {{"type", "image_url"},
+                 {"image_url", {{"url", "data:image/png;base64," + *query.image_b64}}}},
+                {{"type", "text"},
+                 {"text", query.prompt}}
+            }}
+        });
+    } else {
+        messages.push_back({
+            {"role", "user"},
+            {"content", query.prompt}
+        });
     }
 
-    ss << "<|im_start|>assistant\n";
-    return ss.str();
+    return messages;
 }
 
 // ── Deliberation ────────────────────────────────────────────────
@@ -320,7 +333,7 @@ static std::string build_council_prompt(const SoulQuery& query) {
 SoulPlan Soul::deliberate(const SoulQuery& query) {
     std::cout << "[SOUL] Deliberating...\n";
 
-    std::string prompt = build_council_prompt(query);
+    auto messages = build_council_messages(query);
 
 #ifdef HAS_CURL
     if (!impl_->connected) {
@@ -331,24 +344,19 @@ SoulPlan Soul::deliberate(const SoulQuery& query) {
     }
 
     nlohmann::json payload = {
-        {"prompt",      prompt},
-        {"n_predict",   512},
+        {"messages",    messages},
+        {"max_tokens",  512},
         {"temperature", 0.4},
-        {"stop",        {"<|im_end|>"}},
     };
 
-    if (query.image_b64) {
-        payload["image_data"] = {{{"data", *query.image_b64}, {"id", 0}}};
-    }
-
     try {
-        std::string resp = http_post(impl_->server_url + "/completion",
-                                     payload.dump(), 120);
+        std::string resp = http_post(impl_->server_url + "/v1/chat/completions",
+                                     payload.dump(), 300);
         auto json = nlohmann::json::parse(resp, nullptr, false);
 
         SoulPlan plan;
-        if (!json.is_discarded() && json.contains("content")) {
-            std::string content = json["content"];
+        if (!json.is_discarded() && json.contains("choices")) {
+            std::string content = json["choices"][0]["message"]["content"];
 
             // Try to parse the model's JSON response
             auto inner = nlohmann::json::parse(content, nullptr, false);
