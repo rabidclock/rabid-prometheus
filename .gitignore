@@ -27,3 +27,5 @@ server/plugins/Skript/backups/
 server/plugins/Skript/variables.csv
 server/usercache.json
 server/session.lock
+server/.console_history
+server/plugins/Skript/logs/
