@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
     prometheus::Memory    memory;
     prometheus::BodyLink  body("tcp://127.0.0.1:5555");
     prometheus::Lizard    lizard(memory);
-    prometheus::Soul      soul("http://127.0.0.1:8080", memory);
+    prometheus::Soul      soul("http://127.0.0.1:8081", memory);
     prometheus::Arbiter   arbiter(lizard, soul, body);
     prometheus::Teacher   teacher("https://generativelanguage.googleapis.com");
     prometheus::Circadian circadian(memory, teacher);
@@ -55,9 +55,9 @@ int main(int argc, char* argv[]) {
     soul.spawn_server(
         "/home/ben/prometheus/models/Qwen2.5-VL-32B-Instruct-Q8_0.gguf",
         "/home/ben/prometheus/models/mmproj-Qwen2.5-VL-32B-Instruct-Q8_0.gguf",
-        99,    // gpu layers
+        40,    // gpu layers
         4096,  // context size
-        8080   // port
+        8081   // port
     );
     soul.connect();
 
